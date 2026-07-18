@@ -7,7 +7,6 @@
 | **Author** | Nikhil |
 | **Last updated** | 18 Jul 2026 |
 | **Audience** | Design team, Backend team, Frontend team, QA |
-| **Source** | Airtribe Backend-Python Module 16 project brief |
 
 ---
 
