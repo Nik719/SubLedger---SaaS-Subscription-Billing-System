@@ -24,6 +24,16 @@ class DomainError(Exception):
         self.details = details or {}
 
 
+class UnauthorizedError(DomainError):
+    http_status = 401
+    code = "UNAUTHORIZED"
+
+
+class ForbiddenError(DomainError):
+    http_status = 403
+    code = "FORBIDDEN"
+
+
 class NotFoundError(DomainError):
     http_status = 404
     code = "NOT_FOUND"

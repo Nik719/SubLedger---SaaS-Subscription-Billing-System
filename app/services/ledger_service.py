@@ -41,6 +41,9 @@ class LedgerService:
         )
         return self.ledger_repo.create(entry)  # flush only; caller commits
 
+    def get_recent(self, limit: int = 20) -> list[LedgerEntry]:
+        return self.ledger_repo.list_recent(limit)
+
     def get_customer_ledger(self, customer_id: int) -> list[LedgerEntry]:
         if self.customer_repo.get(customer_id) is None:
             raise NotFoundError(

@@ -38,6 +38,13 @@ class PaymentService:
         self.ledger_service = ledger_service
         self.db = db
 
+    def list_attempts_for_invoice(self, invoice_id: int) -> list[PaymentAttempt]:
+        if self.invoice_repo.get(invoice_id) is None:
+            raise NotFoundError(
+                f"Invoice {invoice_id} not found", {"invoice_id": invoice_id}
+            )
+        return self.payment_attempt_repo.list_for_invoice(invoice_id)
+
     def record_payment(self, data: PaymentRecordRequest) -> tuple[PaymentAttempt, Invoice]:
         invoice = self.invoice_repo.get(data.invoice_id)
         if invoice is None:

@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+from app.core.security import require_admin
 from app.db.session import get_db
 from app.repositories.customer_repo import CustomerRepository
 from app.repositories.invoice_repo import InvoiceRepository
@@ -23,7 +24,10 @@ def get_payment_service(db: Session = Depends(get_db)) -> PaymentService:
 
 
 @router.post(
-    "/record", response_model=PaymentRecordResponse, status_code=status.HTTP_201_CREATED
+    "/record",
+    response_model=PaymentRecordResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_admin)],
 )
 def record_payment(
     payload: PaymentRecordRequest,

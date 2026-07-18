@@ -7,6 +7,12 @@ ledger.
 
 Plan → Customer → Subscription → Invoice → Payment → Ledger.
 
+> **Low-Level Design** (ERD, service/repository responsibility tables,
+> business-rule ownership map, design-pattern rationale, core flows):
+> see **[`LLD.md`](LLD.md)** — this file serves as the brief's "DESIGN.md"
+> (that name is taken by the UI visual system, `Design.md`, on this
+> case-insensitive filesystem).
+
 ## Stack
 
 - Python 3.11, FastAPI, SQLAlchemy 2.0, Pydantic v2
@@ -73,6 +79,52 @@ All config is read from environment variables (see `.env.example`):
 | `APP_NAME` | `SubLedger` | Service name |
 | `DEBUG` | `false` | Debug flag |
 | `DATABASE_URL` | `postgresql+psycopg2://subledger:subledger@localhost:5432/subledger` | SQLAlchemy connection string |
+| `CORS_ORIGINS` | `http://localhost:5173` | Comma-separated browser origins |
+| `ADMIN_API_KEY` | `dev-admin-key` | Admin credential (change outside dev) |
+| `JWT_SECRET` | `dev-jwt-secret-change-me` | JWT signing secret (change outside dev) |
+| `JWT_EXPIRES_MINUTES` | `720` | Token lifetime |
+
+## Authentication (Phase 9 bonus)
+
+Two roles, one login endpoint (`POST /api/v1/auth/login`):
+
+- **Admin** — send `{"api_key": "..."}` (matches `ADMIN_API_KEY`), or pass
+  the key directly as an `X-API-Key` header on any request. Admins can do
+  everything.
+- **Customer** — send `{"email": "..."}` to receive a JWT
+  (`Authorization: Bearer <token>`). Customers are **server-side scoped to
+  their own data**: list endpoints are forced to their own records, and
+  direct reads of another customer's resources return `403`.
+  Login is passwordless (email only) — demo-grade by design, since the
+  domain model has no password store.
+
+Public without credentials: `/health`, `GET /api/v1/plans` (catalog),
+`/docs`. Everything else returns `401` without valid credentials.
+
+### Run the admin frontend (Phase 6+)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Opens at `http://localhost:5173` (allowed by the API's `CORS_ORIGINS`
+setting). Screens: Overview (KPIs + activity feed), Plans (list, create,
+edit, deactivate), Customers (list, search, create, detail with
+Subscriptions / Invoices / Ledger tabs), Subscriptions (list, filter,
+create, cancel, generate invoice), Invoice detail (paid-vs-due progress,
+payment attempts, record payment with remaining-amount guard). The full
+happy path — plan → customer → subscription → invoice → payment → paid —
+is achievable entirely in the UI. Design tokens follow `Design.md`; every
+data view has loading, empty, and error states. Set `VITE_API_URL` to
+point at a non-default API address.
+
+The admin app requires signing in at `/login` with the admin API key.
+The **customer portal** lives at `/portal` (read-only, responsive):
+customers sign in with their account email and see only their own
+subscriptions, invoices with payment history, and activity feed — enforced
+server-side. Admins visiting `/portal` get a browse-as-customer picker.
 
 ## Running tests
 
@@ -84,8 +136,9 @@ pip install -r requirements.txt
 pytest -q
 ```
 
-45 tests cover the business rules below plus the invoice-generation and
-payment-recording flows end to end.
+57 tests cover the business rules below, the invoice-generation and
+payment-recording flows end to end, and auth (401/403, role enforcement,
+customer data scoping).
 
 ## API
 
@@ -105,9 +158,12 @@ violation.
 | GET | `/subscriptions` | List subscriptions (filter by customer/plan/status) |
 | PATCH | `/subscriptions/{subscription_id}/cancel` | Cancel a subscription |
 | POST | `/invoices/generate` | Generate an invoice for an active subscription |
+| GET | `/invoices` | List invoices (filter by subscription/customer/status) |
 | GET | `/invoices/{invoice_id}` | Fetch an invoice |
+| GET | `/invoices/{invoice_id}/payments` | List payment attempts for an invoice |
 | POST | `/payments/record` | Record a payment attempt |
 | GET | `/customers/{customer_id}/ledger` | Fetch a customer's ledger history |
+| GET | `/ledger` | Recent ledger activity (feed, `?limit=`) |
 | GET | `/health` | Liveness probe |
 
 Full interactive docs at `/docs` (Swagger) once the app is running.
@@ -149,9 +205,28 @@ failure reason only → append the matching ledger entry.
 
 ## Assumptions & limitations
 
+**Assumptions**
+
 - Payments are **recorded**, not processed — there is no real payment
   gateway integration.
-- Single currency per invoice; no currency conversion.
-- No authentication/RBAC in this version.
-- No taxation, proration, or metered billing.
+- Invoices are created as `issued`; `due_date` = generation time + 14 days.
+- One invoice per (subscription, billing period); duplicates return `409`.
+- Billing periods are calendar-aware: Jan 31 + 1 month → Feb 28/29
+  (cycles: monthly, quarterly, yearly).
+- Customer emails are normalized to lowercase, so uniqueness (BR-2) is
+  case-insensitive.
+- BR-6 caps **successful** payments only; failed attempts of any amount are
+  recordable as evidence and never touch the invoice (BR-8).
+- Single currency per invoice; payment currency must match the invoice;
+  no currency conversion.
 - Timestamps are stored in UTC.
+
+**Limitations**
+
+- Customer login is passwordless (email only) — sufficient for the bonus
+  demo, not for production; add a password/OTP store to harden it.
+- `overdue` status exists but is not auto-derived (no scheduler); `draft`
+  and `void` transitions are not exposed via the API.
+- No pagination on list endpoints.
+- Invoice generation is manual — there is no recurring billing job.
+- No taxation, proration, or metered billing.

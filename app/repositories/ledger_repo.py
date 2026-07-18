@@ -24,3 +24,7 @@ class LedgerRepository:
             .order_by(LedgerEntry.id)
         )
         return list(self.db.execute(stmt).scalars())
+
+    def list_recent(self, limit: int) -> list[LedgerEntry]:
+        stmt = select(LedgerEntry).order_by(LedgerEntry.id.desc()).limit(limit)
+        return list(self.db.execute(stmt).scalars())

@@ -1,10 +1,19 @@
 """FastAPI application factory and router registration."""
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
 from app.core.exceptions import register_exception_handlers
-from app.routes import customers, invoices, ledger, payments, plans, subscriptions
+from app.routes import (
+    auth,
+    customers,
+    invoices,
+    ledger,
+    payments,
+    plans,
+    subscriptions,
+)
 
 API_PREFIX = "/api/v1"
 
@@ -17,8 +26,24 @@ def create_app() -> FastAPI:
         version="0.1.0",
     )
 
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origin_list,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origin_list,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     register_exception_handlers(application)
 
+    application.include_router(auth.router, prefix=API_PREFIX)
     application.include_router(plans.router, prefix=API_PREFIX)
     application.include_router(customers.router, prefix=API_PREFIX)
     application.include_router(subscriptions.router, prefix=API_PREFIX)

@@ -95,6 +95,16 @@ class InvoiceService:
         self.db.commit()  # invoice + ledger entry committed atomically
         return invoice
 
+    def list_invoices(
+        self,
+        subscription_id: int | None = None,
+        customer_id: int | None = None,
+        status: str | None = None,
+    ) -> list[Invoice]:
+        return self.invoice_repo.list_filtered(
+            subscription_id=subscription_id, customer_id=customer_id, status=status
+        )
+
     def get_invoice(self, invoice_id: int) -> Invoice:
         invoice = self.invoice_repo.get(invoice_id)
         if invoice is None:

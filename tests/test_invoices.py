@@ -143,3 +143,34 @@ def test_ledger_unknown_customer_404(client: TestClient) -> None:
     response = client.get("/api/v1/customers/999/ledger")
 
     assert response.status_code == 404
+
+
+def test_list_invoices_with_filters(client: TestClient) -> None:
+    customer_id, _, sub_id = _setup_subscription(client)
+    invoice = client.post(
+        "/api/v1/invoices/generate", json={"subscription_id": sub_id}
+    ).json()
+
+    by_sub = client.get("/api/v1/invoices", params={"subscription_id": sub_id}).json()
+    by_customer = client.get(
+        "/api/v1/invoices", params={"customer_id": customer_id}
+    ).json()
+    issued = client.get("/api/v1/invoices", params={"status": "issued"}).json()
+    paid = client.get("/api/v1/invoices", params={"status": "paid"}).json()
+
+    assert [i["id"] for i in by_sub] == [invoice["id"]]
+    assert [i["id"] for i in by_customer] == [invoice["id"]]
+    assert len(issued) == 1
+    assert paid == []
+
+
+def test_recent_ledger_feed(client: TestClient) -> None:
+    _, _, sub_id = _setup_subscription(client)
+    client.post("/api/v1/invoices/generate", json={"subscription_id": sub_id})
+
+    response = client.get("/api/v1/ledger", params={"limit": 5})
+
+    assert response.status_code == 200
+    entries = response.json()
+    assert len(entries) == 1
+    assert entries[0]["entry_type"] == "invoice_created"

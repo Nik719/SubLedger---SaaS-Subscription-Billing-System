@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design.md: gray-50 canvas, Inter, tabular numbers for amounts */
+body {
+  @apply bg-gray-50 text-gray-600 font-sans text-sm antialiased;
+}
+
+.amount {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Design.md 7: 2px primary focus ring on all interactive elements */
+.focusable {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-1;
+}

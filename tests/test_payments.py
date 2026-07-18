@@ -158,6 +158,27 @@ def test_payment_on_paid_invoice_rejected(client: TestClient) -> None:
     assert response.status_code == 422
 
 
+def test_list_payment_attempts_for_invoice(client: TestClient) -> None:
+    _, invoice_id = _setup_invoice(client)
+    client.post(
+        "/api/v1/payments/record",
+        json=_payment(invoice_id, "40.00", status="failed", failure_reason="timeout"),
+    )
+    client.post("/api/v1/payments/record", json=_payment(invoice_id, "40.00"))
+
+    response = client.get(f"/api/v1/invoices/{invoice_id}/payments")
+
+    assert response.status_code == 200
+    attempts = response.json()
+    assert [a["status"] for a in attempts] == ["failed", "success"]
+
+
+def test_list_attempts_unknown_invoice_404(client: TestClient) -> None:
+    response = client.get("/api/v1/invoices/999/payments")
+
+    assert response.status_code == 404
+
+
 def test_payment_unknown_invoice_404(client: TestClient) -> None:
     response = client.post("/api/v1/payments/record", json=_payment(999, "10.00"))
 

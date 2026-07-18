@@ -3,9 +3,11 @@ __pycache__/
 .venv/
 venv/
 .env
+docker-compose.override.yml
 *.sqlite3
 *.db
 .pytest_cache/
+pytest-cache-files-*/
 .mypy_cache/
 htmlcov/
 .coverage
@@ -14,10 +16,28 @@ build/
 *.egg-info/
 node_modules/
 
+# Local-only npm shell override (hardcodes this machine's PowerShell path;
+# fixes cmd.exe mis-parsing "&" in this repo's folder name)
+frontend/.npmrc
+
+# Editor / OS junk
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
 .claude/
+.code-review-graph/
+
+# Internal planning/spec docs — not needed to run or deploy the app
 Phases.md
 Architecture.md
 Design.md
+LLD.md
 Memory.md
 PRD.md
 Rules.md

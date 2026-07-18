@@ -31,12 +31,19 @@ class InvoiceRepository:
         )
         return self.db.execute(stmt).scalars().first()
 
-    def list_for_subscription(self, subscription_id: int) -> list[Invoice]:
-        stmt = (
-            select(Invoice)
-            .where(Invoice.subscription_id == subscription_id)
-            .order_by(Invoice.id)
-        )
+    def list_filtered(
+        self,
+        subscription_id: int | None = None,
+        customer_id: int | None = None,
+        status: str | None = None,
+    ) -> list[Invoice]:
+        stmt = select(Invoice).order_by(Invoice.id.desc())
+        if subscription_id is not None:
+            stmt = stmt.where(Invoice.subscription_id == subscription_id)
+        if customer_id is not None:
+            stmt = stmt.where(Invoice.customer_id == customer_id)
+        if status is not None:
+            stmt = stmt.where(Invoice.status == status)
         return list(self.db.execute(stmt).scalars())
 
     def save(self, invoice: Invoice) -> Invoice:
