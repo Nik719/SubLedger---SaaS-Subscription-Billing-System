@@ -7,12 +7,6 @@ ledger.
 
 Plan → Customer → Subscription → Invoice → Payment → Ledger.
 
-> **Low-Level Design** (ERD, service/repository responsibility tables,
-> business-rule ownership map, design-pattern rationale, core flows):
-> see **[`LLD.md`](LLD.md)** — this file serves as the brief's "DESIGN.md"
-> (that name is taken by the UI visual system, `Design.md`, on this
-> case-insensitive filesystem).
-
 ## Stack
 
 - Python 3.11, FastAPI, SQLAlchemy 2.0, Pydantic v2
